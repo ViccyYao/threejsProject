@@ -23,7 +23,7 @@
 <div id="Stats-output" style="position: absolute;left: 0;top: 0"></div>
 <div id="WebGL-output"></div>
 <script type="text/javascript">
-    var stats, scene, camera, renderer,control;
+    var stats, scene, camera, renderer, control;
     var objects = [];
     $(function () {
         initGis();
@@ -85,6 +85,9 @@
         spotLight.castShadow = true;
         scene.add(spotLight);
 
+        //添加坐标轴
+        var axis = new THREE.AxisHelper(100);
+        scene.add(axis);
 
         $("#WebGL-output").append(renderer.domElement);
 
@@ -210,9 +213,9 @@
 
 
     //创建控制器
-    function initControls(){
+    function initControls() {
         //	TrackballControls 轨迹球控件，最常用的控件，可以使用鼠标轻松的移动、平移，缩放场景。
-        control = new THREE.TrackballControls( camera );
+        control = new THREE.TrackballControls(camera);
         control.rotateSpeed = 1.0;// 旋转速度
         control.zoomSpeed = 1.2;// 缩放速度
         control.panSpeed = 0.8;// 平controls
@@ -221,15 +224,15 @@
         control.staticMoving = true;// 静止移动，为 true 则没有惯性
         control.dynamicDampingFactor = 0.3;// 阻尼系数 越小 则滑动越大
         // DragControls 初始化拖拽控件
-        var dragControls = new THREE.DragControls( objects, camera, renderer.domElement );
+        var dragControls = new THREE.DragControls(objects, camera, renderer.domElement);
         // 开始拖拽
-        dragControls.addEventListener( 'dragstart', function () {
+        dragControls.addEventListener('dragstart', function () {
             control.enabled = false;
-        } );
+        });
         // 拖拽结束
-        dragControls.addEventListener( 'dragend', function () {
+        dragControls.addEventListener('dragend', function () {
             control.enabled = true;
-        } );
+        });
     }
 </script>
 </body>
