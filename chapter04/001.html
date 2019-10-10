@@ -106,6 +106,7 @@
             this.wireframeLinewidth = material.wireframeLinewidth;
             this.wireframeLinejoin = material.wireframeLinejoin;
             this.selectMesh = "cube";
+            this.rotateXYZ = "x";
 
             this.switchRenderer = function () {
                 if (renderer instanceof THREE.WebGLRenderer) {
@@ -176,6 +177,11 @@
             }
         });
 
+        spguid.add(controls, 'rotateXYZ', ["x", "y", "z"]).onChange(function (e) {
+            this.rotateXYZ = e;
+        });
+
+
         gui.add(controls, 'switchRenderer');
         var cvGui = gui.addFolder("Canvas renderer");
         cvGui.add(controls, 'overdraw').onChange(function (e) {
@@ -193,9 +199,25 @@
 
         function render() {
             stats.update();
-            cube.rotation.y = step += 0.01;
-            plane.rotation.y = step;
-            sphere.rotation.y = step;
+            step += 0.01;
+            switch (controls.rotateXYZ) {
+                case "x":
+                    cube.rotation.set(step, 0, 0);
+                    plane.rotation.set(step, 0, 0);
+                    sphere.rotation.set(step, 0, 0);
+                    break;
+                case "y":
+                    cube.rotation.set(0, step, 0);
+                    plane.rotation.set(0, step, 0);
+                    sphere.rotation.set(0, step, 0);
+                    break;
+                case "z":
+                    cube.rotation.set(0, 0, step);
+                    plane.rotation.set(0, 0, step);
+                    sphere.rotation.set(0, 0, step);
+                    break;
+            }
+
             requestAnimationFrame(render);
             renderer.render(scene, camera);
 
