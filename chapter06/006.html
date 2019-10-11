@@ -1,0 +1,145 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <title>chapter0606 rain scene</title>
+    <style type="text/css">
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+    </style>
+    <script src="../js/vendor/jquery-3.4.1.min.js"></script>
+    <script src="../js/threejs/dat.gui.js"></script>
+    <script src="../js/threejs/three.js"></script>
+    <script src="../js/threejs/stats.js"></script>
+    <script src="../js/threejs/OrbitControls.js"></script>
+    <script src="../js/threejs/VTKLoader.js"></script>
+</head>
+<body>
+<div id="Stats-output" style="position: absolute;top: 0;left: 0"></div>
+<div id="WebGL-output"></div>
+<script type="text/javascript">
+    var scene, camera, renderer, stats, cloud;
+    $(function () {
+        initThreeJS();
+    });
+
+    function initThreeJS() {
+        stats = initStats();
+
+        renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(0x000000, 1.0);
+        renderer.shadowMapEnabled = true;
+
+        scene = new THREE.Scene();
+        camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 10000);
+
+        var orbit = new THREE.OrbitControls(camera, renderer.domElement);
+
+        var ambientLight = new THREE.AmbientLight(0x0c0c0c);
+        scene.add(ambientLight);
+
+        var spotLight = new THREE.SpotLight(0xffffff);
+        spotLight.position.set(0, 60, 0);
+        spotLight.castShadow = true;
+        scene.add(spotLight);
+
+        var spotLightHelper = new THREE.SpotLightHelper(spotLight);
+        scene.add(spotLightHelper);
+
+        var spotLight1 = new THREE.SpotLight(0xffffff);
+        spotLight1.position.set(0, -60, 0);
+        spotLight1.castShadow = true;
+        scene.add(spotLight1);
+
+        var spotLightHelper1 = new THREE.SpotLightHelper(spotLight1);
+        scene.add(spotLightHelper1);
+
+        var axisHelper = new THREE.AxisHelper(50);
+        scene.add(axisHelper);
+
+
+        camera.position.set(20, 40, 110);
+        camera.lookAt(new THREE.Vector3(20, 30, 0));
+
+
+        var controls = new function () {
+            this.size = 3;
+            this.transparent = true;
+            this.opacity = 0.6;
+            this.color = 0xffffff;
+            this.sizeAttenuation = true;
+            this.redraw = function () {
+                scene.remove(cloud);
+                createPointCloud(controls.size, controls.transparent, controls.opacity, controls.sizeAttenuation, controls.color);
+            };
+        };
+        var gui = new dat.GUI();
+        gui.add(controls, 'size', 0, 20).onChange(controls.redraw);
+        gui.add(controls, 'transparent').onChange(controls.redraw);
+        gui.add(controls, 'opacity', 0, 1).onChange(controls.redraw);
+        gui.addColor(controls, 'color').onChange(controls.redraw);
+        gui.add(controls, 'sizeAttenuation').onChange(controls.redraw);
+        controls.redraw();
+
+
+        function createPointCloud(size, transparent, opacity, sizeAttenuation, color) {
+            var texture = THREE.ImageUtils.loadTexture("../assets/textures/particles/raindrop-3.png");
+            var geom = new THREE.Geometry();
+            var material = new THREE.ParticleBasicMaterial({
+                size: size,
+                transparent: transparent,
+                opacity: opacity,
+                map: texture,
+                blending: THREE.AdditiveBlending,
+                sizeAttenuation: sizeAttenuation,
+                color: color
+            });
+            var range = 800;
+            for (var i = 0; i < 1500; i++) {
+                var particle = new THREE.Vector3(
+                    Math.random() * range - range / 2,
+                    Math.random() * range * 1.5,
+                    Math.random() * range - range / 2);
+                particle.velocityY = 0.1 + Math.random() / 5;
+                particle.velocityX = (Math.random() - 0.5) / 3;
+                geom.vertices.push(particle);
+            }
+            cloud = new THREE.Points(geom, material);
+            cloud.sortParticles = true;
+            scene.add(cloud);
+        }
+
+
+        $("#WebGL-output").append(renderer.domElement);
+
+        render();
+
+        function render() {
+            stats.update();
+
+            var vertices = cloud.geometry.vertices;
+            vertices.forEach(function (v) {
+                v.y = v.y - (v.velocityY);
+                v.x = v.x - (v.velocityX);
+                if (v.y <= 0) v.y = 60;
+                if (v.x <= -20 || v.x >= 20) v.velocityX = v.velocityX * -1;
+            });
+
+            // render using requestAnimationFrame
+            requestAnimationFrame(render);
+            renderer.render(scene, camera);
+        }
+    }
+
+    function initStats() {
+        var thisStats = new Stats();
+        thisStats.setMode(0);
+        $("#Stats-output").append(thisStats.domElement);
+        return thisStats;
+    }
+</script>
+</body>
+</html>
