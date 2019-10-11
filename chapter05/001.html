@@ -2,7 +2,7 @@
         "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <head>
-    <title>chapter0405 Ring Geometry</title>
+    <title>chapter0501 Convex Geometry</title>
     <style type="text/css">
         body {
             margin: 0;
@@ -14,6 +14,7 @@
     <script src="../js/threejs/three.js"></script>
     <script src="../js/threejs/stats.js"></script>
     <script src="../js/threejs/OrbitControls.js"></script>
+    <script src="../js/threejs/ConvexGeometry.js"></script>
 </head>
 <body>
 <div id="Stats-output" style="position: absolute;top: 0;left: 0"></div>
@@ -28,34 +29,43 @@
         stats = initStats();
 
         renderer = new THREE.WebGLRenderer();
-        scene = new THREE.Scene();
-        camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 10000);
-
-
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setClearColor(0xEEEEEE, 1.0);
         renderer.shadowMapEnabled = true;
+
+        scene = new THREE.Scene();
+        camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 10000);
 
         var orbit = new THREE.OrbitControls(camera, renderer.domElement);
 
         var ambientLight = new THREE.AmbientLight(0x0c0c0c);
         scene.add(ambientLight);
 
-        var points = generatePoints();
-        var geometry = new THREE.LatheGeometry(points, 50, 0, Math.PI);
-        var material = new THREE.MeshLambertMaterial({color: 0x7777ff});
-        material.side = THREE.DoubleSide;
 
-        var lathe = new THREE.Mesh(geometry, material);
-        lathe.position.set(0, 0, 0);
-        lathe.castShadow = true;
-        scene.add(lathe);
+        var points = [];
 
-        var cube = new THREE.CubeGeometry(15, 15, 15);
-        var cubeMesh = new THREE.Mesh(cube, material);
-        cubeMesh.position.set(50, 0, 0);
-        cubeMesh.castShadow = true;
-        scene.add(cubeMesh);
+        for (var i = 0; i < 20; i++) {
+            var randomX = -15 + Math.round(Math.random() * 30);
+            var randomY = -15 + Math.round(Math.random() * 30);
+            var randomZ = -15 + Math.round(Math.random() * 30);
+            points.push(new THREE.Vector3(randomX, randomY, randomZ));
+        }
+        var spGroup = new THREE.Object3D();
+        var material = new THREE.MeshBasicMaterial({color: 0xff0000, transparent: false});
+        points.forEach(function (point) {
+            var spGeometry = new THREE.SphereGeometry(0.2);
+            var spMesh = new THREE.Mesh(spGeometry, material);
+            spMesh.position.copy(point);
+            spGroup.add(spMesh);
+        });
+        scene.add(spGroup);
+
+        var convexMaterial = new THREE.MeshBasicMaterial({color: 0xffff00, transparent: false});
+        var convexGeometry = new THREE.ConvexGeometry(points);
+        var convexMesh1 = new THREE.Mesh(convexGeometry, convexMaterial);
+
+        var convexMesh2 = createMesh(convexGeometry);
+        scene.add(convexMesh2);
 
         var spotLight = new THREE.SpotLight(0xffffff);
         spotLight.position.set(0, 60, 0);
@@ -112,6 +122,19 @@
             requestAnimationFrame(render);
             renderer.render(scene, camera);
         }
+    }
+
+    function createMesh(geom) {
+        // assign two materials
+        var meshMaterial = new THREE.MeshBasicMaterial({color: 0x00ff00, transparent: true, opacity: 0.2});
+        meshMaterial.side = THREE.DoubleSide;
+        var wireFrameMat = new THREE.MeshBasicMaterial();
+        wireFrameMat.wireframe = true;
+
+        // create a multimaterial
+        var mesh = THREE.SceneUtils.createMultiMaterialObject(geom, [meshMaterial, wireFrameMat]);
+
+        return mesh;
     }
 
     function generatePoints() {
