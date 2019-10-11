@@ -1,0 +1,137 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <title>chapter0405 Ring Geometry</title>
+    <style type="text/css">
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+    </style>
+    <script src="../js/vendor/jquery-3.4.1.min.js"></script>
+    <script src="../js/threejs/dat.gui.js"></script>
+    <script src="../js/threejs/three.js"></script>
+    <script src="../js/threejs/stats.js"></script>
+    <script src="../js/threejs/OrbitControls.js"></script>
+</head>
+<body>
+<div id="Stats-output" style="position: absolute;top: 0;left: 0"></div>
+<div id="WebGL-output"></div>
+<script type="text/javascript">
+    var scene, camera, renderer, stats;
+    $(function () {
+        initThreeJS();
+    });
+
+    function initThreeJS() {
+        stats = initStats();
+
+        renderer = new THREE.WebGLRenderer();
+        scene = new THREE.Scene();
+        camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 10000);
+
+
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(0xEEEEEE, 1.0);
+        renderer.shadowMapEnabled = true;
+
+        var orbit = new THREE.OrbitControls(camera, renderer.domElement);
+
+        var ambientLight = new THREE.AmbientLight(0x0c0c0c);
+        scene.add(ambientLight);
+
+        var points = generatePoints();
+        var geometry = new THREE.LatheGeometry(points, 50, 0, Math.PI);
+        var material = new THREE.MeshLambertMaterial({color: 0x7777ff});
+        material.side = THREE.DoubleSide;
+
+        var lathe = new THREE.Mesh(geometry, material);
+        lathe.position.set(0, 0, 0);
+        lathe.castShadow = true;
+        scene.add(lathe);
+
+        var cube = new THREE.CubeGeometry(15, 15, 15);
+        var cubeMesh = new THREE.Mesh(cube, material);
+        cubeMesh.position.set(50, 0, 0);
+        cubeMesh.castShadow = true;
+        scene.add(cubeMesh);
+
+        var spotLight = new THREE.SpotLight(0xffffff);
+        spotLight.position.set(0, 60, 0);
+        spotLight.castShadow = true;
+        scene.add(spotLight);
+
+        var spotLightHelper = new THREE.SpotLightHelper(spotLight);
+        scene.add(spotLightHelper);
+
+        var spotLight1 = new THREE.SpotLight(0xffffff);
+        spotLight1.position.set(0, -60, 0);
+        spotLight1.castShadow = true;
+        scene.add(spotLight1);
+
+        var spotLightHelper1 = new THREE.SpotLightHelper(spotLight1);
+        scene.add(spotLightHelper1);
+
+        var axisHelper = new THREE.AxisHelper(50);
+        scene.add(axisHelper);
+
+
+        var directionalLight = new THREE.DirectionalLight("#ffffff");
+        directionalLight.position.set(0, 50, 0);
+
+        directionalLight.shadow.camera.near = 20; //产生阴影的最近距离
+        directionalLight.shadow.camera.far = 200; //产生阴影的最远距离
+        directionalLight.shadow.camera.left = -50; //产生阴影距离位置的最左边位置
+        directionalLight.shadow.camera.right = 50; //最右边
+        directionalLight.shadow.camera.top = 50; //最上边
+        directionalLight.shadow.camera.bottom = -50; //最下面
+
+        //这两个值决定使用多少像素生成阴影 默认512
+        directionalLight.shadow.mapSize.height = 1024;
+        directionalLight.shadow.mapSize.width = 1024;
+
+        //告诉平行光需要开启阴影投射
+        directionalLight.castShadow = true;
+
+        scene.add(directionalLight);
+
+
+        camera.position.set(-50, 50, 40);
+        camera.lookAt(new THREE.Vector3(10, 0, 0));
+
+        $("#WebGL-output").append(renderer.domElement);
+
+        var control = new THREE.OrbitControls(camera, renderer.domElement);
+
+        render();
+
+        function render() {
+            stats.update();
+            // render using requestAnimationFrame
+            requestAnimationFrame(render);
+            renderer.render(scene, camera);
+        }
+    }
+
+    function generatePoints() {
+        var points = [];
+        var R = 1000;
+        var startAngle = 0;
+        var endAngle = 180;
+        for (var i = startAngle; i < endAngle; i += 1) {
+            points.push(new THREE.Vector2(Math.cos(i / 180 * Math.PI) * R, Math.sin(i / 180 * Math.PI) * R));
+            //points.push(new THREE.Vector3(Math.sin(i / 180 * Math.PI) * R, 0, Math.cos(i / 180 * Math.PI) * R));
+        }
+        return points;
+    }
+
+    function initStats() {
+        var thisStats = new Stats();
+        thisStats.setMode(0);
+        $("#Stats-output").append(thisStats.domElement);
+        return thisStats;
+    }
+</script>
+</body>
+</html>
