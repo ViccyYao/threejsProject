@@ -2,7 +2,7 @@
         "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <head>
-    <title>chapter0501 Convex Geometry</title>
+    <title>chapter0503 Extrude Geometry</title>
     <style type="text/css">
         body {
             margin: 0;
@@ -20,7 +20,7 @@
 <div id="Stats-output" style="position: absolute;top: 0;left: 0"></div>
 <div id="WebGL-output"></div>
 <script type="text/javascript">
-    var scene, camera, renderer, stats;
+    var scene, camera, renderer, stats, shape;
     $(function () {
         initThreeJS();
     });
@@ -34,31 +34,13 @@
         renderer.shadowMapEnabled = true;
 
         scene = new THREE.Scene();
-        camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 10000);
+        camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
 
         var orbit = new THREE.OrbitControls(camera, renderer.domElement);
 
         var ambientLight = new THREE.AmbientLight(0x0c0c0c);
         scene.add(ambientLight);
 
-        var points = generatePoints();
-
-        var spGroup = new THREE.Object3D();
-        var material = new THREE.MeshBasicMaterial({color: 0xff0000, transparent: false});
-        points.forEach(function (point) {
-            var spGeometry = new THREE.SphereGeometry(0.2);
-            var spMesh = new THREE.Mesh(spGeometry, material);
-            spMesh.position.copy(point);
-            spGroup.add(spMesh);
-        });
-        scene.add(spGroup);
-
-        var convexMaterial = new THREE.MeshBasicMaterial({color: 0xffff00, transparent: false});
-        var convexGeometry = new THREE.ConvexGeometry(points);
-        var convexMesh1 = new THREE.Mesh(convexGeometry, convexMaterial);
-
-        var convexMesh2 = createMesh(convexGeometry);
-        scene.add(convexMesh2);
 
         var spotLight = new THREE.SpotLight(0xffffff);
         spotLight.position.set(0, 60, 0);
@@ -99,34 +81,111 @@
 
         scene.add(directionalLight);
 
+        //createMesh
+        shape = createMesh(new THREE.ShapeGeometry(drawShap()));
+        scene.add(shape);
+        //controls
+        var step = 0;
+        var controls = new function () {
+            this.amount = 2;
+            this.bevelThickness = 2;
+            this.bevelSize = 0.5;
+            this.bevelEnabled = true;
+            this.bevelSegment = 3;
+            this.curveSegments = 12;
+            this.step = 1;
+            this.asGeom = function () {
+                scene.remove(shape);
+                var options = {
+                    amount: controls.amount,
+                    bevelThickness: controls.bevelThickness,
+                    bevelSize: controls.bevelSize,
+                    bevelEnabled: controls.bevelEnabled,
+                    bevelSegment: controls.bevelSegment,
+                    curveSegments: controls.curveSegments,
+                    step: controls.step
+                };
+
+                shape = createMesh(new THREE.ExtrudeGeometry(drawShap(), options));
+                scene.add(shape);
+            };
+        };
+        //gui
+        var gui = new dat.GUI();
+        gui.add(controls, "amount", 0, 20).onChange(controls.asGeom);
+        gui.add(controls, "bevelThickness", 0, 10).onChange(controls.asGeom);
+        gui.add(controls, "bevelSize", 0, 10).onChange(controls.asGeom);
+        gui.add(controls, "bevelSegment", 0, 30).onChange(controls.asGeom);
+        gui.add(controls, "bevelEnabled").onChange(controls.asGeom);
+        gui.add(controls, "curveSegments", 1, 30).onChange(controls.asGeom);
+        gui.add(controls, "step", 1, 5).onChange(controls.asGeom);
+
+        controls.asGeom();
 
         camera.position.set(-50, 50, 40);
         camera.lookAt(new THREE.Vector3(10, 0, 0));
 
         $("#WebGL-output").append(renderer.domElement);
 
-        var control = new THREE.OrbitControls(camera, renderer.domElement);
 
         render();
 
         function render() {
             stats.update();
+            step += 0.01;
+            shape.rotation.y = step;
             // render using requestAnimationFrame
             requestAnimationFrame(render);
             renderer.render(scene, camera);
         }
     }
 
+    function drawShap() {
+        // create a basic shape
+        var shape = new THREE.Shape();
+        // startpoint
+        shape.moveTo(10, 10);
+        // straight line upwards
+        shape.lineTo(10, 40);
+        // the top of the figure, curve to the right
+        shape.bezierCurveTo(15, 25, 25, 25, 30, 40);
+        // spline back down
+        shape.splineThru(
+            [new THREE.Vector2(32, 30),
+                new THREE.Vector2(28, 20),
+                new THREE.Vector2(30, 10),
+            ]);
+        // curve at the bottom
+        shape.quadraticCurveTo(20, 15, 10, 10);
+        // add 'eye' hole one
+        var hole1 = new THREE.Path();
+        hole1.absellipse(16, 24, 2, 3, 0, Math.PI * 2, true);
+        shape.holes.push(hole1);
+        // add 'eye hole 2'
+        var hole2 = new THREE.Path();
+        hole2.absellipse(23, 24, 2, 3, 0, Math.PI * 2, true);
+        shape.holes.push(hole2);
+        // add 'mouth'
+        var hole3 = new THREE.Path();
+        hole3.absarc(20, 16, 2, 0, Math.PI, true);
+        shape.holes.push(hole3);
+        // return the shape
+        return shape;
+    }
+
     function createMesh(geom) {
+        geom.applyMatrix(new THREE.Matrix4().makeTranslation(-20, 0, 0));
         // assign two materials
-        var meshMaterial = new THREE.MeshBasicMaterial({color: 0x00ff00, transparent: true, opacity: 0.2});
-        meshMaterial.side = THREE.DoubleSide;
+        var meshMaterial = new THREE.MeshNormalMaterial({
+            shading: THREE.FlatShading,
+            transparent: true,
+            opacity: 0.7
+        });
+        //  meshMaterial.side = THREE.DoubleSide;
         var wireFrameMat = new THREE.MeshBasicMaterial();
         wireFrameMat.wireframe = true;
-
         // create a multimaterial
-        var mesh = THREE.SceneUtils.createMultiMaterialObject(geom, [meshMaterial, wireFrameMat]);
-
+        var mesh = THREE.SceneUtils.createMultiMaterialObject(geom, [meshMaterial]);
         return mesh;
     }
 
