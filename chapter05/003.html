@@ -62,27 +62,9 @@
         scene.add(axisHelper);
 
 
-        var directionalLight = new THREE.DirectionalLight("#ffffff");
-        directionalLight.position.set(0, 50, 0);
-
-        directionalLight.shadow.camera.near = 20; //产生阴影的最近距离
-        directionalLight.shadow.camera.far = 200; //产生阴影的最远距离
-        directionalLight.shadow.camera.left = -50; //产生阴影距离位置的最左边位置
-        directionalLight.shadow.camera.right = 50; //最右边
-        directionalLight.shadow.camera.top = 50; //最上边
-        directionalLight.shadow.camera.bottom = -50; //最下面
-
-        //这两个值决定使用多少像素生成阴影 默认512
-        directionalLight.shadow.mapSize.height = 1024;
-        directionalLight.shadow.mapSize.width = 1024;
-
-        //告诉平行光需要开启阴影投射
-        directionalLight.castShadow = true;
-
-        scene.add(directionalLight);
-
         //createMesh
         shape = createMesh(new THREE.ShapeGeometry(drawShap()));
+
         scene.add(shape);
         //controls
         var step = 0;
@@ -93,17 +75,17 @@
             this.bevelEnabled = true;
             this.bevelSegment = 3;
             this.curveSegments = 12;
-            this.step = 1;
+            this.steps = 1;
             this.asGeom = function () {
                 scene.remove(shape);
                 var options = {
                     amount: controls.amount,
                     bevelThickness: controls.bevelThickness,
                     bevelSize: controls.bevelSize,
+                    bevelSegments: controls.bevelSegments,
                     bevelEnabled: controls.bevelEnabled,
-                    bevelSegment: controls.bevelSegment,
                     curveSegments: controls.curveSegments,
-                    step: controls.step
+                    steps: controls.steps
                 };
 
                 shape = createMesh(new THREE.ExtrudeGeometry(drawShap(), options));
@@ -118,7 +100,7 @@
         gui.add(controls, "bevelSegment", 0, 30).onChange(controls.asGeom);
         gui.add(controls, "bevelEnabled").onChange(controls.asGeom);
         gui.add(controls, "curveSegments", 1, 30).onChange(controls.asGeom);
-        gui.add(controls, "step", 1, 5).onChange(controls.asGeom);
+        gui.add(controls, "steps", 0, 5).onChange(controls.asGeom);
 
         controls.asGeom();
 
@@ -133,7 +115,7 @@
         function render() {
             stats.update();
             step += 0.01;
-            shape.rotation.y = step;
+            // shape.rotation.y = step;
             // render using requestAnimationFrame
             requestAnimationFrame(render);
             renderer.render(scene, camera);
@@ -141,34 +123,44 @@
     }
 
     function drawShap() {
+
         // create a basic shape
         var shape = new THREE.Shape();
+
         // startpoint
         shape.moveTo(10, 10);
+
         // straight line upwards
         shape.lineTo(10, 40);
+
         // the top of the figure, curve to the right
         shape.bezierCurveTo(15, 25, 25, 25, 30, 40);
+
         // spline back down
         shape.splineThru(
             [new THREE.Vector2(32, 30),
                 new THREE.Vector2(28, 20),
                 new THREE.Vector2(30, 10),
             ]);
+
         // curve at the bottom
         shape.quadraticCurveTo(20, 15, 10, 10);
+
         // add 'eye' hole one
         var hole1 = new THREE.Path();
         hole1.absellipse(16, 24, 2, 3, 0, Math.PI * 2, true);
         shape.holes.push(hole1);
+
         // add 'eye hole 2'
         var hole2 = new THREE.Path();
         hole2.absellipse(23, 24, 2, 3, 0, Math.PI * 2, true);
         shape.holes.push(hole2);
+
         // add 'mouth'
         var hole3 = new THREE.Path();
         hole3.absarc(20, 16, 2, 0, Math.PI, true);
         shape.holes.push(hole3);
+
         // return the shape
         return shape;
     }
