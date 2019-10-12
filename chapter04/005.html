@@ -40,6 +40,8 @@
         camera.far = 139;
 
         var material = new THREE.MeshBasicMaterial({color: 0x7777ff});
+        material.side = THREE.DoubleSide;
+        material.transparent=true;
         var ringGeometry = new THREE.RingGeometry(5, 10, 100, 100);
         var mesh = new THREE.Mesh(ringGeometry, material);
         mesh.position.set(0, 0, 0);

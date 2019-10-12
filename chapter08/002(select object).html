@@ -1,0 +1,163 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <title>chapter0802 selectObject</title>
+    <style type="text/css">
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+    </style>
+    <script src="../js/vendor/jquery-3.4.1.min.js"></script>
+    <script src="../js/threejs/dat.gui.js"></script>
+    <script src="../js/threejs/three.js"></script>
+    <script src="../js/threejs/stats.js"></script>
+    <script src="../js/threejs/OrbitControls.js"></script>
+    <script src="../js/threejs/Projector.js"></script>
+</head>
+<body>
+<div id="Stats-output" style="position: absolute;top: 0;left: 0"></div>
+<div id="WebGL-output"></div>
+<script type="text/javascript">
+    let scene, camera, renderer, stats;
+    $(function () {
+        initThreeJS();
+    });
+
+    function initThreeJS() {
+        stats = initStats();
+
+        renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(0xEEEEEE, 1.0);
+        renderer.shadowMapEnabled = true;
+
+        scene = new THREE.Scene();
+        camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 10000);
+
+        let orbit = new THREE.OrbitControls(camera, renderer.domElement);
+
+        let ambientLight = new THREE.AmbientLight(0x0c0c0c);
+        scene.add(ambientLight);
+
+        let spotLight = new THREE.SpotLight(0xffffff);
+        spotLight.position.set(0, 60, 0);
+        spotLight.castShadow = true;
+        scene.add(spotLight);
+
+        let spotLightHelper = new THREE.SpotLightHelper(spotLight);
+        scene.add(spotLightHelper);
+
+        let spotLight1 = new THREE.SpotLight(0xffffff);
+        spotLight1.position.set(0, -60, 0);
+        spotLight1.castShadow = true;
+        scene.add(spotLight1);
+
+        let spotLightHelper1 = new THREE.SpotLightHelper(spotLight1);
+        scene.add(spotLightHelper1);
+
+        let axisHelper = new THREE.AxisHelper(50);
+        scene.add(axisHelper);
+
+
+        camera.position.set(-50, 50, 40);
+        camera.lookAt(new THREE.Vector3(10, 0, 0));
+
+
+        let planeGeometry = new THREE.PlaneGeometry(100, 20, 20, 20);
+        let planeMaterial = new THREE.MeshBasicMaterial({color: 0xffffff, side: 2});
+        let planeMesh = new THREE.Mesh(planeGeometry, planeMaterial);
+        planeMesh.rotation.x = -0.5 * Math.PI;
+        scene.add(planeMesh);
+
+        let cubeGeometry = new THREE.CubeGeometry(4, 4, 4);
+        let cubeMaterial = new THREE.MeshBasicMaterial({color: 0xff00cc, side: 2});
+        let cubeMesh = new THREE.Mesh(cubeGeometry, cubeMaterial);
+        cubeMesh.position.set(-10, 2, 0);
+        scene.add(cubeMesh);
+
+        let sphereGeometry = new THREE.SphereGeometry(5, 20, 20);
+        let sphereMaterial = new THREE.MeshBasicMaterial({color: 0xff0000, side: 2});
+        let sphereMesh = new THREE.Mesh(sphereGeometry, sphereMaterial);
+        sphereMesh.position.set(10, 5, 0);
+        scene.add(sphereMesh);
+
+        $("#WebGL-output").append(renderer.domElement);
+
+        document.addEventListener('mousedown', onDocumentMouseDown, false);
+        document.addEventListener('mousemove', onDocumentMouseMove, false);
+
+        render();
+
+        var step = 1;
+        var bouneSpeed = 1;
+
+        function render() {
+            stats.update();
+            step += 0.01;
+            bouneSpeed += 0.02;
+            cubeMesh.rotation.y = step;
+
+            sphereMesh.position.x = 20 + (10 * (Math.cos(bouneSpeed)));
+            sphereMesh.position.y = 2 + (10 * Math.abs(Math.sin(bouneSpeed)));
+
+            // render using requestAnimationFrame
+            requestAnimationFrame(render);
+            renderer.render(scene, camera);
+        }
+
+        var projector = new THREE.Projector();
+        var tube;
+
+        function onDocumentMouseDown(event) {
+            var vector = new THREE.Vector3((event.clientX / window.innerWidth) * 2 - 1, -(event.clientY / window.innerHeight) * 2 + 1, 0.5);
+            vector = vector.unproject(camera);
+            var raycaster = new THREE.Raycaster(camera.position, vector.sub(camera.position).normalize());
+            var intersects = raycaster.intersectObjects([cubeMesh, sphereMesh]);
+            if (intersects.length > 0) {
+                console.log(intersects[0]);
+                var transparent = intersects[0].object.material.transparent;
+                if (transparent) {
+                    intersects[0].object.material.transparent = false;
+                    intersects[0].object.material.opacity = 0.1;
+                } else {
+                    intersects[0].object.material.transparent = true;
+                    intersects[0].object.material.opacity = 0.1;
+                }
+            }
+        }
+
+        function onDocumentMouseMove() {
+            var vector = new THREE.Vector3((event.clientX / window.innerWidth) * 2 - 1, -(event.clientY / window.innerHeight) * 2 + 1, 0.5);
+            vector = vector.unproject(camera);
+
+            var raycaster = new THREE.Raycaster(camera.position, vector.sub(camera.position).normalize());
+            var intersects = raycaster.intersectObjects([cubeMesh, sphereMesh]);
+
+
+            if (intersects.length > 0) {
+                console.log("123123");
+                var points = [];
+                points.push(new THREE.Vector3(-10, 50, 50));
+                points.push(intersects[0].point);
+
+                var mat = new THREE.MeshBasicMaterial({color: 0xff00ff, transparent: true, opacity: 0.6, side: 2});
+                var tubeGeometry = new THREE.TubeGeometry(new THREE.SplineCurve3(points), 60, 0.1);
+
+                if (tube) scene.remove(tube);
+                tube = new THREE.Mesh(tubeGeometry, mat);
+                scene.add(tube);
+            }
+        }
+    }
+
+    function initStats() {
+        let thisStats = new Stats();
+        thisStats.setMode(0);
+        $("#Stats-output").append(thisStats.domElement);
+        return thisStats;
+    }
+</script>
+</body>
+</html>
